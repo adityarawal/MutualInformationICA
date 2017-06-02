@@ -1,0 +1,50 @@
+%LSTM
+%clear all; close all;clc;
+function lstmInfoFlow(expname, output_fname, embedding_fname, h_fname, delay, num_points, num_dim)
+
+%name = strsplit(h_fname, '/'); %Use embedding file name as unique identifier 
+%name = strsplit(name{end}, '.'); %Use embedding file name as unique identifier 
+%uniqueId = strcat(delay, name{1}) %Required by MIxnyn to dump the matrices in a text file with unique name
+expname
+delay = str2num(delay);
+num_points = str2num(num_points);
+num_dim = str2num(num_dim);
+
+%input = dlmread(embedding_fname, ' ', [0 0 num_points-1 num_dim-1]);
+output = dlmread(h_fname, ' ', [0 0 num_points-1 num_dim-1]);
+%size(input)
+size(output)
+h_fname
+%%Node v/s layer mutual information
+%%Topmost (final layer) is softmax with size = number of classes = 10
+% MImatrix = zeros(length(h)-1, size(h{2},2));
+% for i = length(h):-1:2
+%     i
+%     t = h{i};
+%     for j = 1:size(t,2)
+%         MImatrix(length(h)-i+1,j) = MIxnyn(h{1}', t(:,j)');
+%     end
+% end
+
+%%Layer v/s layer mutual information
+timeMI = MIxnyn(output(1:end-delay,:), output(delay+1:end,:), expname)
+
+fileID = fopen(output_fname,'w');
+fprintf(fileID, '%f\n',timeMI);
+fclose(fileID);
+
+%end
+%layerMI = zeros(length(h)-1, 1); %Ignoring the topmost layer
+%count = 1;
+%for i = length(h)-1:-1:1
+%    i
+%    layerMI(count) = MIxnyn(h{1}',h{i}')
+%    count = count+1 ;
+%end
+%
+%imagesc(layerMI);            %# Create a colored plot of the matrix values
+%colorbar
+%colormap(flipud(summer));  %# Change the colormap to gray (so higher values are
+%title('resnet')
+
+end

@@ -1,0 +1,10 @@
+Getenv = True
+Requirements = InMastodon
+Executable     = run_mediumUntrained_Lstm1H_9_80000_650.sh
+Log = /scratch/cluster/aditya/mutualInfo/logs/lstm/condor_logs/log_mediumUntrained_Lstm1H_9_80000_650.txt
+Output  = /scratch/cluster/aditya/mutualInfo/logs/lstm/condor_logs/output_mediumUntrained_Lstm1H_9_80000_650.txt
+Error  = /scratch/cluster/aditya/mutualInfo/logs/lstm/condor_logs/error_mediumUntrained_Lstm1H_9_80000_650.txt
++Group = "GRAD"
++Project = "Neural Networks"
++ProjectDescription = "LSTM Evolution"
+Queue 1

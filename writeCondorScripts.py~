@@ -1,0 +1,106 @@
+"""
+USAGE
+#To plot
+python writeCondorScripts.py 0
+
+#To run on condor
+python writeCondorScripts.py 1
+"""
+from pylab import *
+import numpy as np
+import sys
+import os
+
+if __name__=='__main__':
+ 
+  run_condor = bool(int(sys.argv[1]))
+  scratch_path = '/scratch/cluster/aditya/mutualInfo/logs/lstm/'
+  exp_types = ['mediumFullyTrained', 'mediumUntrained']
+  hidden_types = ['Lstm0C', 'Lstm1C', 'Lstm0H', 'Lstm1H']
+  num_delays = 10
+  num_points = 60000
+  num_dim = 650
+  condor_logs_path = scratch_path+'condor_logs/'
+  network_logs_path = scratch_path+'network_logs/' #Node activations are dumped here
+  expt_logs = scratch_path+'expt_logs/'
+  code_path = '/u/aditya/MutualInformationICA/' 
+  code_fname = 'lstmInfoFlow'
+  output_dir = '/scratch/cluster/aditya/mutualInfo/logs/lstm/expt_logs/'
+  
+  if (run_condor==True):
+    print ('RUNNING ON CONDOR')
+    for exp in exp_types:
+        embedding_fname = network_logs_path+exp+'EmbeddingOutput.txt'
+    
+        for hidden in hidden_types:
+
+            hidden_fname = network_logs_path+exp+hidden+'.txt'
+
+            for delay in range(num_delays):
+        
+                expname = exp+'_'+hidden+'_'+str(delay)+'_'+str(num_points)+'_'+str(num_dim)
+                #Write run.sh scripts
+                #expname = exp+'_'+str(delay)+'_'+str(num_points)+'_'+str(num_dim)
+                runScript_name = 'run_'+expname+'.sh' #For e.g run_mediumFullyTrained_3.sh
+                output_fname = output_dir+expname+'.txt'
+                f_wr = open (runScript_name, "w")
+                lines = []
+                lines.append('#!/lusr/bin/bash'+'\n')
+                args = '"'+code_fname+' '+expname+' '+output_fname+' '+embedding_fname+' '+hidden_fname+' '+str(delay)+' '+str(num_points)+' '+str(num_dim)+'"'
+                lines.append('/lusr/bin/matlab -nodisplay -nodesktop -nojvm -nosplash -r '+args+'\n')
+                f_wr.writelines(lines)
+                f_wr.close()
+                os.system('chmod 777 '+runScript_name)
+                
+                #Write Condor Script
+                lines = []
+                lines.append('Getenv = True\n')
+                lines.append('Requirements = InMastodon\n')
+                lines.append('Executable     = '+ runScript_name+'\n')
+                #lines.append('arguments = ' + p2nv_file +'\n')
+                lines.append('Log = '+condor_logs_path+'log_'+expname+'.txt\n')
+                lines.append('Output  = '+condor_logs_path+'output_'+expname+'.txt\n')
+                lines.append('Error  = '+condor_logs_path+'error_'+expname+'.txt\n')
+                lines.append('+Group = "GRAD"\n')
+                lines.append('+Project = "Neural Networks"\n')
+                lines.append('+ProjectDescription = "LSTM Evolution"\n')
+                lines.append('Queue 1\n')
+                f_wr = open ('condorun', "w")
+                f_wr.writelines(lines)
+                f_wr.close()
+        
+                #Execute condor script
+                os.system('/lusr/opt/condor/bin/condor_submit condorun')
+   
+  else:
+    print ('PLOTTING LOGS')
+    #For each experiment, extract MI from the filename and plot it
+    for exp in exp_types:
+        for hidden in hidden_types:
+
+            x_list = range(num_delays)
+            y_list = []
+            for delay in range(num_delays):
+                expname = exp+'_'+hidden+'_'+str(delay)+'_'+str(num_points)+'_'+str(num_dim)
+                runScript_name = 'run_'+expname+'.sh' #For e.g run_mediumFullyTrained_Lstm0C_20000_650_3.sh
+                os.system(('rm -f '+runScript_name))
+                output_fname = output_dir+expname+'.txt'
+
+                #Output file contains only the mutual information value. Read It!
+                f_rd = open(output_fname, 'r')
+                line = f_rd.read()
+                value = float (line.strip())
+                y_list.append(value)
+            labelname =  exp+'_'+hidden+'_'+str(num_points)+'_'+str(num_dim)
+            plot(x_list, y_list, label=(labelname))
+
+    legend(loc='center right', prop={'size':14})
+    xlabel('Time Delay',fontsize=18)
+    ylabel('MI between Input Embedding layer and Top LSTM layer',fontsize=18)
+    #title('y_x_delay = ' + str(y_x_delay) + ', active_steps = ' + str(active_time_steps) + ', num_bin = ' + str(num_bin),fontsize=16, fontweight="bold")
+    tick_params(labelsize=14)
+    grid(True)
+
+    savefig("results/"+ '-'.join(exp_types)+'-'+str(num_points)+'-'+str(num_dim)+".png")
+    show()
+    

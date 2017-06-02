@@ -1,0 +1,10 @@
+Getenv = True
+Requirements = InMastodon
+Executable     = run.sh
+Log = /scratch/cluster/aditya/mutualInfo/log.txt
+Output  = /scratch/cluster/aditya/mutualInfo/output.txt
+Error  = /scratch/cluster/aditya/mutualInfo/error.txt
++Group = "GRAD"
++Project = "Neural Networks"
++ProjectDescription = "LSTM Evolution"
+Queue 30
